@@ -9,6 +9,10 @@ Trains and compares three deep-learning models on brain MRI images to detect tum
 | **Binary** | Tumor (`yes`) vs No Tumor (`no`) | VGG16 · Custom CNN · ResNet50 |
 | **Multi-class** | Healthy · Glioma · Meningioma · Pituitary | VGG16 · Custom CNN · ResNet50 |
 
+The project has two parts:
+1. **`brain_tumor_detection.ipynb`** — the notebook that loads the datasets, trains all 6 models, evaluates them, and saves them as `.h5` files.
+2. **`app.py`** — a Streamlit web app that loads the trained `.h5` files and lets you upload an MRI scan, pick a model, and see a live prediction, plus a model-comparison tab with accuracy/loss charts.
+
 ---
 
 ## Dataset Structure
@@ -143,6 +147,76 @@ model = tf.keras.models.load_model('binary_resnet50.h5')
 
 ---
 
+## Running the Streamlit App (Interactive Demo)
+
+Once you have the 6 `.h5` files (either trained yourself via the notebook, or
+provided to you directly), you can run the interactive web app instead of
+using the notebook.
+
+### Step 1 — Folder structure
+
+Put everything in **one folder** like this:
+
+```
+your-folder/
+├── app.py
+├── assets/
+│   ├── binary_vgg16_history.png
+│   ├── binary_customcnn_history.png
+│   ├── binary_resnet50_history.png
+│   ├── multiclass_customcnn_history.png
+│   ├── multiclass_resnet50_history.png
+│   ├── multiclass_vgg16_history.png
+│   └── multiclass_accuracy_all.png
+├── binary_vgg16.h5
+├── binary_custom_cnn.h5
+├── binary_resnet50.h5
+├── multiclass_custom_cnn.h5
+├── multiclass_resnet50.h5
+└── multiclass_vgg16.h5
+```
+
+The `assets/` folder holds the training-history chart images shown in the
+app's **Model Comparison** tab — the app won't run correctly without it.
+
+### Step 2 — Install dependencies
+
+```bash
+pip install streamlit tensorflow opencv-python imutils pandas numpy pillow
+```
+
+> If you already ran the notebook locally, you likely have everything except
+> `streamlit`. Just run `pip install streamlit` in that case.
+
+### Step 3 — Launch the app
+
+From inside `your-folder`, run:
+
+```bash
+streamlit run app.py
+```
+
+This opens the app in your browser at `http://localhost:8501`. Use the
+sidebar to pick a model, upload an MRI image in the **Detection** tab, and
+check the **Model Comparison** tab for accuracy/loss charts across all 6
+models.
+
+### What the app does automatically
+
+- Resizes images to the correct input size per model (224×224 for Binary,
+  128×128 for MultiClass).
+- Applies the same black-padding crop (`crop_brain_roi`) used during Binary
+  model training — MultiClass images are used as-is, since that's how they
+  were trained.
+- Caches each loaded model so switching between them in the sidebar doesn't
+  reload from disk every time.
+
+⚠️ This app is for educational/demo purposes — predictions on images that
+don't match the training data's format (wrong scan type, wrong orientation,
+non-MRI images) are not reliable.
+
+---
+
 ## Expected Training Times (GPU)
 
 | Model | Task | Approx. time |
@@ -165,5 +239,8 @@ EarlyStopping will often stop training earlier than the epoch limit.
 | `❌ Could not find the binary dataset` | Check that `yes/` and `no/` folders are inside the Kaggle input path |
 | `⚠️ Folder not found: Training` | Verify the multi-class dataset is attached and `MULTICLASS_DATASET_PATH` is correct |
 | `OOM / ResourceExhaustedError` | Reduce `batch_size` in Cell 6/8 from 32 → 16, or Cell 10 from 16 → 8 |
-| `ModuleNotFoundError: imutils` | Run `pip install imutils` in a notebook cell: `!pip install imutils` |
+| `ModuleNotFoundError: imutils` | Notebook: run `!pip install imutils` in a cell. App: run `pip install imutils` in your terminal, in the same Python environment you use to launch `streamlit run app.py` |
+| `ModuleNotFoundError: streamlit` (or any other module) | Run `pip install <module-name>` in the same environment/terminal you use to run the app — a fresh install won't have packages until you install them there |
+| App shows a broken image icon in "Model Comparison" | The `assets/` folder is missing or not next to `app.py` — re-check the folder structure above |
+| App error loading a `.h5` model | Make sure all 6 `.h5` files are in the same folder as `app.py`, with the exact filenames listed in "Output Files" above |
 | Validation accuracy stuck near 50% | Increase `epochs` slightly or check that data loaded correctly in Cell 3 |
