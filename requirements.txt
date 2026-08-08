@@ -1,9 +1,12 @@
 streamlit
+jupyter
 tensorflow
 numpy
+pandas
 pillow
 opencv-python-headless
-h5py
+imutils
 scikit-learn
 matplotlib
-pandas
+seaborn
+h5py
