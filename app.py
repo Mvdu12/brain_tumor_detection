@@ -16,7 +16,7 @@ from huggingface_hub import hf_hub_download
 # All 6 .h5 files are downloaded from this repo instead of being bundled
 # in the GitHub repo (keeps the repo small, and models can be updated by
 # re-uploading to HF without redeploying the app).
-HF_REPO_ID = "mvdu/brain-tumor-models"   
+HF_REPO_ID = "your-username/brain-tumor-models"   # <-- change to your own repo
 
 # =========================
 # PAGE CONFIG
@@ -156,8 +156,12 @@ st.markdown(f"""
 
 # =========================
 # MODEL METADATA
-# (accuracy / loss values are the real validation results from the
-#  training notebook — brain_tumor_detection.ipynb)
+# (accuracy values computed directly from each model's confusion matrix on
+#  the held-out validation set — from the final training run in
+#  brain_tumor_detection.ipynb. val_loss for MultiClass models is read from
+#  the final epoch of the training curves; val_loss for Binary models isn't
+#  available as no training-curve chart was exported for that section, so
+#  it's left as None and hidden in the UI rather than guessed.)
 # =========================
 MODEL_INFO = {
     "Binary - VGG16": {
@@ -165,64 +169,74 @@ MODEL_INFO = {
         "task": "Binary",
         "architecture": "VGG16 (Transfer Learning, frozen ImageNet base)",
         "img_size": (224, 224),
-        "accuracy": 72.55,
-        "val_loss": 0.5373,
-        "dataset": "brain_tumor_dataset (yes/no), 80/20 split",
-        "history_chart": "assets/binary_vgg16_history.png",
+        "accuracy": 97.83,
+        "val_loss": 0.08,
+        "dataset": "akar49/MRI_Classification (Hugging Face) — notumor/tumor, ~3.6k images, 80/20 split, dedup-checked",
+        "chart_type": "history",
+        "history_chart": "assets/vgg16_b1.png",
+        "confusion_chart": "assets/vgg16_b.png",
     },
     "Binary - Custom CNN": {
         "file": "binary_custom_cnn.h5",
         "task": "Binary",
-        "architecture": "Custom 3-block CNN (trained from scratch)",
+        "architecture": "Custom 3-block CNN (trained from scratch, class-weighted)",
         "img_size": (224, 224),
-        "accuracy": 60.78,
-        "val_loss": 0.6911,
-        "dataset": "brain_tumor_dataset (yes/no), 80/20 split",
-        "history_chart": "assets/binary_customcnn_history.png",
+        "accuracy": 96.43,
+        "val_loss": 0.10,
+        "dataset": "akar49/MRI_Classification (Hugging Face) — notumor/tumor, ~3.6k images, 80/20 split, dedup-checked",
+        "chart_type": "history",
+        "history_chart": "assets/cnn_b1.png",
+        "confusion_chart": "assets/cnn_b.png",
     },
     "Binary - ResNet50": {
         "file": "binary_resnet50.h5",
         "task": "Binary",
         "architecture": "ResNet50 (fine-tuned, last 10 layers unfrozen)",
         "img_size": (224, 224),
-        "accuracy": 74.51,
-        "val_loss": 0.4577,
-        "dataset": "brain_tumor_dataset (yes/no), 80/20 split",
-        "history_chart": "assets/binary_resnet50_history.png",
+        "accuracy": 99.07,
+        "val_loss": 0.04,
+        "dataset": "akar49/MRI_Classification (Hugging Face) — notumor/tumor, ~3.6k images, 80/20 split, dedup-checked",
+        "chart_type": "history",
+        "history_chart": "assets/resnet50_b1.png",
+        "confusion_chart": "assets/resnet50_b.png",
     },
     "MultiClass - Custom CNN": {
         "file": "multiclass_custom_cnn.h5",
         "task": "MultiClass",
-        "architecture": "Custom 3-block CNN (trained from scratch)",
+        "architecture": "Custom 3-block CNN (trained from scratch, augmented)",
         "img_size": (128, 128),
-        "accuracy": 83.38,
-        "val_loss": 0.5293,
-        "dataset": "brain-tumor-mri-dataset (4 classes), Training+Testing merged",
-        "history_chart": "assets/multiclass_customcnn_history.png",
+        "accuracy": 71.04,
+        "val_loss": 0.72,
+        "dataset": "masoudnickparvar/brain-tumor-mri-dataset (Kaggle) — 4 classes, dynamically balanced, Training+Testing merged",
+        "chart_type": "history",
+        "history_chart": "assets/cnn_mpng.png",
+        "confusion_chart": "assets/cnn_m1.png",
     },
     "MultiClass - ResNet50": {
         "file": "multiclass_resnet50.h5",
         "task": "MultiClass",
-        "architecture": "ResNet50 (frozen feature extractor)",
+        "architecture": "ResNet50 (fine-tuned, last 10 layers unfrozen)",
         "img_size": (128, 128),
-        "accuracy": 54.62,
-        "val_loss": 1.1970,
-        "dataset": "brain-tumor-mri-dataset (4 classes), Training+Testing merged",
-        "history_chart": "assets/multiclass_resnet50_history.png",
+        "accuracy": 96.18,
+        "val_loss": 0.15,
+        "dataset": "masoudnickparvar/brain-tumor-mri-dataset (Kaggle) — 4 classes, dynamically balanced, Training+Testing merged",
+        "chart_type": "history",
+        "history_chart": "assets/resnet50_m.png",
+        "confusion_chart": "assets/resnet50_m1.png",
     },
     "MultiClass - VGG16": {
         "file": "multiclass_vgg16.h5",
         "task": "MultiClass",
-        "architecture": "VGG16 (frozen feature extractor)",
+        "architecture": "VGG16 (Transfer Learning, frozen ImageNet base)",
         "img_size": (128, 128),
-        "accuracy": 75.25,
-        "val_loss": 0.8332,
-        "dataset": "brain-tumor-mri-dataset (4 classes), Training+Testing merged",
-        "history_chart": "assets/multiclass_vgg16_history.png",
+        "accuracy": 83.19,
+        "val_loss": 0.49,
+        "dataset": "masoudnickparvar/brain-tumor-mri-dataset (Kaggle) — 4 classes, dynamically balanced, Training+Testing merged",
+        "chart_type": "history",
+        "history_chart": "assets/vgg16_m.png",
+        "confusion_chart": "assets/vgg16_m1.png",
     },
 }
-
-MULTICLASS_COMBINED_CHART = "assets/multiclass_accuracy_all.png"
 
 binary_classes = ["No Tumor", "Tumor"]
 multiclass_names = ["Healthy", "Glioma", "Meningioma", "Pituitary"]
@@ -468,13 +482,14 @@ with st.sidebar:
         label_visibility="collapsed"
     )
     info = MODEL_INFO[selected_model]
+    val_loss_display = f"{info['val_loss']:.2f}" if info['val_loss'] is not None else "—"
 
     st.markdown(f"""
     <div class="sidebar-info">
         <div class="metric-row"><span class="metric-label">Task</span><span class="metric-val">{info['task']}</span></div>
         <div class="metric-row"><span class="metric-label">Architecture</span><span class="metric-val">{info['architecture'].split('(')[0].strip()}</span></div>
         <div class="metric-row"><span class="metric-label">Accuracy</span><span class="metric-val">{info['accuracy']}%</span></div>
-        <div class="metric-row"><span class="metric-label">Val Loss</span><span class="metric-val">{info['val_loss']}</span></div>
+        <div class="metric-row"><span class="metric-label">Val Loss</span><span class="metric-val">{val_loss_display}</span></div>
         <div class="metric-row"><span class="metric-label">Input Size</span><span class="metric-val">{info['img_size'][0]}×{info['img_size'][1]}</span></div>
     </div>
     """, unsafe_allow_html=True)
@@ -573,7 +588,7 @@ with tab_compare:
             "Task": d["task"],
             "Architecture": d["architecture"],
             "Accuracy (%)": d["accuracy"],
-            "Val Loss": d["val_loss"],
+            "Val Loss": d["val_loss"] if d["val_loss"] is not None else "—",
         }
         for name, d in MODEL_INFO.items()
     ]).sort_values("Accuracy (%)", ascending=False).reset_index(drop=True)
@@ -597,10 +612,10 @@ with tab_compare:
         st.bar_chart(multi_df, color=PRIMARY_DARK)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ---------- Training history charts (from the training notebook) ----------
+    # ---------- Training history / confusion matrix charts (from the notebook) ----------
     st.markdown('<div class="app-card">', unsafe_allow_html=True)
-    st.markdown("#### 📈 Training History")
-    st.caption("Accuracy / loss curves recorded while training each model, taken directly from the training notebook.")
+    st.markdown("#### 📈 Training Results")
+    st.caption("Accuracy/loss curves and confusion matrix recorded for each model on the validation set — taken directly from the training notebook.")
 
     hist_task = st.radio(
         "Task",
@@ -616,11 +631,12 @@ with tab_compare:
         list(task_models.keys()),
         key="history_model_select"
     )
-    chart_path = task_models[hist_model_name]["history_chart"]
-    st.image(chart_path, use_container_width=True)
+    selected_info = task_models[hist_model_name]
 
-    if hist_task == "MultiClass":
-        st.markdown("###### Combined Validation Accuracy — All MultiClass Models")
-        st.image(MULTICLASS_COMBINED_CHART, use_container_width=True)
+    st.markdown(f"###### {hist_model_name} — Training curves (accuracy & loss)")
+    st.image(selected_info["history_chart"], use_container_width=True)
+
+    with st.expander("Show confusion matrix too"):
+        st.image(selected_info["confusion_chart"], use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
