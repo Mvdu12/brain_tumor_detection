@@ -9,3 +9,4 @@ scikit-learn
 matplotlib
 seaborn
 h5py
+huggingface_hub
