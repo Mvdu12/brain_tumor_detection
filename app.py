@@ -16,7 +16,7 @@ from huggingface_hub import hf_hub_download
 # All 6 .h5 files are downloaded from this repo instead of being bundled
 # in the GitHub repo (keeps the repo small, and models can be updated by
 # re-uploading to HF without redeploying the app).
-HF_REPO_ID = "mvdu/brain-tumor-models"   # <-- change to your own repo
+HF_REPO_ID = "mvdu/brain-tumor-models"   
 
 # =========================
 # PAGE CONFIG
