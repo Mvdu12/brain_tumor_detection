@@ -209,7 +209,7 @@ MODEL_INFO = {
         "val_loss": 0.72,
         "dataset": "masoudnickparvar/brain-tumor-mri-dataset (Kaggle) — 4 classes, dynamically balanced, Training+Testing merged",
         "chart_type": "history",
-        "history_chart": "assets/cnn_mpng.png",
+        "history_chart": "assets/cnn_m.png",
         "confusion_chart": "assets/cnn_m1.png",
     },
     "MultiClass - ResNet50": {
