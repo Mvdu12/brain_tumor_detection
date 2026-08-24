@@ -8,6 +8,15 @@ from PIL import Image
 import cv2
 import imutils
 import h5py
+from huggingface_hub import hf_hub_download
+
+# =========================
+# HUGGING FACE MODEL REPO
+# =========================
+# All 6 .h5 files are downloaded from this repo instead of being bundled
+# in the GitHub repo (keeps the repo small, and models can be updated by
+# re-uploading to HF without redeploying the app).
+HF_REPO_ID = "your-username/brain-tumor-models"   # <-- change to your own repo
 
 # =========================
 # PAGE CONFIG
@@ -255,6 +264,37 @@ def build_binary_resnet50_architecture():
     ], name='ResNet50_BrainTumor')
 
 
+@st.cache_resource
+def build_multiclass_resnet50_architecture():
+    """
+    Same idea as build_binary_resnet50_architecture() above, but for
+    multiclass_resnet50.h5. The updated training notebook now fine-tunes
+    the last 10 layers of ResNet50 AND adds the same kind of Lambda
+    preprocessing layer for the multi-class task (previously it was fully
+    frozen with no Lambda layer) — so this model is now exposed to the
+    exact same Lambda-unpickling risk described above.
+
+    ⚠️ Layer names below were verified with inspect_h5_model.py against the
+    actual trained multiclass_resnet50.h5 — these are the real names, not
+    placeholders.
+    """
+    resnet50_base_model = ResNet50(
+        weights=None, include_top=False, input_shape=(128, 128, 3)
+    )
+    return models.Sequential([
+        layers.Lambda(
+            lambda pixel_values: resnet50_preprocess(pixel_values * 255.0),
+            input_shape=(128, 128, 3),
+            name="lambda_1"
+        ),
+        resnet50_base_model,                                              # default name "resnet50"
+        layers.GlobalAveragePooling2D(name="global_average_pooling2d_4"),
+        layers.Dense(256, activation='relu', name="dense_8"),
+        layers.Dropout(0.4, name="dropout_4"),
+        layers.Dense(4, activation='softmax', name="dense_9")
+    ], name='MC_ResNet50')
+
+
 def _find_weights_group(h5_group, target_layer_name):
     """
     Given an h5py group that should contain a layer's weight datasets,
@@ -331,12 +371,25 @@ def load_weights_manually(model, h5_path):
 
 @st.cache_resource
 def load_model(path):
+    """
+    `path` is the model's filename as stored in the HF repo (e.g.
+    "binary_vgg16.h5"). It's downloaded from Hugging Face Hub first —
+    hf_hub_download caches it on disk, so this only re-downloads if the
+    file isn't already cached locally.
+    """
     try:
+        local_path = hf_hub_download(repo_id=HF_REPO_ID, filename=path)
+
         if path == "binary_resnet50.h5":
             model = build_binary_resnet50_architecture()
             # See load_weights_manually() docstring for why we don't use
-            # model.load_weights(path, by_name=True) here.
-            load_weights_manually(model, path)
+            # model.load_weights(local_path, by_name=True) here.
+            load_weights_manually(model, local_path)
+            return model
+
+        if path == "multiclass_resnet50.h5":
+            model = build_multiclass_resnet50_architecture()
+            load_weights_manually(model, local_path)
             return model
 
         # Keras 3 blocks deserializing Lambda layers with a raw Python
@@ -344,9 +397,9 @@ def load_model(path):
         # Older TF/Keras versions don't have this kwarg at all, so we
         # fall back gracefully if it's not supported.
         try:
-            return tf.keras.models.load_model(path, safe_mode=False)
+            return tf.keras.models.load_model(local_path, safe_mode=False)
         except TypeError:
-            return tf.keras.models.load_model(path)
+            return tf.keras.models.load_model(local_path)
     except Exception as e:
         st.error(f"⚠️ Failed to load model '{path}': {e}")
         st.stop()
